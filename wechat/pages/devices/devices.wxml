@@ -1,7 +1,48 @@
 <scroll-view class="page" scroll-y>
   <view class="card">
+    <view class="title">OneNET 平台配置</view>
+    <view class="field">
+      <text class="label">产品ID（默认）</text>
+      <input value="{{productId}}" bindinput="onInputProductId" placeholder="请输入产品ID" />
+    </view>
+    <view class="field">
+      <text class="label">API Key</text>
+      <input value="{{apiKey}}" bindinput="onInputApiKey" placeholder="请输入 API Key" />
+    </view>
+    <view class="field">
+      <text class="label">Base URL</text>
+      <input value="{{baseUrl}}" bindinput="onInputBaseUrl" placeholder="https://iot-api.heclouds.com" />
+    </view>
+    <view class="actions">
+      <button size="mini" class="bind-btn" bindtap="savePlatformConfig">保存配置</button>
+      <button size="mini" class="warning-btn" loading="{{loading}}" bindtap="initFromCloudList">接口初始化设备</button>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="title">设备管理操作</view>
+
+    <view class="op-box">
+      <text class="op-title">添加已有设备（先查详情判断存在）</text>
+      <input value="{{addDeviceName}}" bindinput="onInputAddDeviceName" placeholder="设备名" />
+      <button size="mini" class="bind-btn" loading="{{loading}}" bindtap="addExistingDevice">添加设备</button>
+    </view>
+
+    <view class="op-box">
+      <text class="op-title">创建设备</text>
+      <input value="{{createDeviceName}}" bindinput="onInputCreateDeviceName" placeholder="设备名" />
+      <button size="mini" class="bind-btn" loading="{{loading}}" bindtap="createNewDevice">创建设备</button>
+    </view>
+
+    <view class="op-box">
+      <text class="op-title">删除设备</text>
+      <input value="{{deleteDeviceName}}" bindinput="onInputDeleteDeviceName" placeholder="设备名" />
+      <button size="mini" class="danger-btn" loading="{{loading}}" bindtap="deleteDevice">删除设备</button>
+    </view>
+  </view>
+
+  <view class="card">
     <view class="title">多设备接入管理</view>
-    <view class="subtitle">支持按分组查看设备接入状态，后续可映射到 OneNET 产品与设备实例。</view>
     <view class="group-row">
       <block wx:for="{{groupFilter}}" wx:key="*this">
         <view class="group-chip {{item === currentGroup ? 'active' : ''}}" data-group="{{item}}" bindtap="changeGroup">{{item}}</view>
@@ -23,7 +64,9 @@
       <view class="meta">最近上报：{{item.latest}}</view>
       <view class="meta">接入通道：{{item.gateway}}</view>
 
-      <button size="mini" class="bind-btn" data-id="{{item.id}}" bindtap="bindDevice">设为当前监控设备</button>
+      <view class="actions">
+        <button size="mini" class="warning-btn" data-id="{{item.id}}" bindtap="goDeviceWarning">该设备预警设置</button>
+      </view>
     </view>
   </block>
 </scroll-view>

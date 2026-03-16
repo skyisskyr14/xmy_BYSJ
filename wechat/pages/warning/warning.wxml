@@ -1,8 +1,27 @@
 <scroll-view class="page" scroll-y>
   <view class="card">
-    <view class="title">预警中心开关</view>
+    <view class="title">设备预警中心</view>
+    <view class="subtitle">当前设备：{{currentDeviceName}}（{{currentDeviceId}}）</view>
+    <scroll-view class="device-scroll" scroll-x>
+      <view class="device-chip-wrap">
+        <block wx:for="{{devices}}" wx:key="id">
+          <view
+            class="device-chip {{item.id === currentDeviceId ? 'active' : ''}}"
+            data-id="{{item.id}}"
+            bindtap="switchDeviceByTap"
+          >
+            <text class="chip-name">{{item.name}}</text>
+            <text class="chip-id">{{item.id}}</text>
+          </view>
+        </block>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="card">
+    <view class="title">预警开关</view>
     <view class="row">
-      <text>总开关</text>
+      <text>该设备预警开关</text>
       <switch checked="{{globalEnabled}}" bindchange="onToggleGlobal" color="#1f6feb" />
     </view>
   </view>
@@ -39,5 +58,5 @@
     </block>
   </view>
 
-  <button class="save-btn" bindtap="saveRules">保存预警配置</button>
+  <button class="save-btn" bindtap="saveRules">保存当前设备预警配置</button>
 </scroll-view>

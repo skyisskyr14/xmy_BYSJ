@@ -1,4 +1,6 @@
-const devices = [
+const oneNet = require('../../utils/onenet')
+
+const fallbackDevices = [
   {
     id: 'ESP32S3-WQ-001',
     name: '1号水箱',
@@ -31,9 +33,9 @@ Page({
     subtitle: '毕业设计 · 小程序监控端（前端演示版）',
     updateTime: '2026-03-16 12:00',
     connectionHint: '当前为静态演示数据，后续将通过 OneNET 接入实时设备数据。',
-    devices,
+    devices: fallbackDevices,
     currentDeviceIndex: 0,
-    device: devices[0],
+    device: fallbackDevices[0],
     metrics: [
       {
         key: 'turbidity',
@@ -91,14 +93,18 @@ Page({
   goMetricDetail(e) {
     const { key, title, unit, value } = e.currentTarget.dataset
     wx.navigateTo({
-      url: `/pages/metric/metric?key=${key}&title=${title}&unit=${unit || ''}&value=${value}`,
+      url: `/pages/metric/metric?key=${key}&title=${title}&unit=${unit || ''}&value=${value}&deviceId=${this.data.device.id}`,
     })
+
+    setTimeout(() => {
+      wx.stopPullDownRefresh()
+    }, 400)
   },
 
   goQuickAction(e) {
     const { key } = e.currentTarget.dataset
     if (key === 'warning') {
-      wx.navigateTo({ url: '/pages/warning/warning' })
+      wx.navigateTo({ url: `/pages/warning/warning?deviceId=${this.data.device.id}` })
       return
     }
     if (key === 'devices') {
@@ -114,6 +120,20 @@ Page({
     setTimeout(() => {
       wx.stopPullDownRefresh()
     }, 400)
+  },
+
+  onShow() {
+    const localDevices = oneNet.getLocalDevices()
+    if (localDevices.length) {
+      const currentId = this.data.device && this.data.device.id
+      const idx = localDevices.findIndex((d) => d.id === currentId)
+      const nextIndex = idx >= 0 ? idx : 0
+      this.setData({
+        devices: localDevices,
+        currentDeviceIndex: nextIndex,
+        device: localDevices[nextIndex],
+      })
+    }
   },
 
   onPullDownRefresh() {

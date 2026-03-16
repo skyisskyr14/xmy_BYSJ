@@ -37,15 +37,17 @@ Page({
     statMin: '-',
     statMax: '-',
     statAvg: '-',
+    deviceId: 'ESP32S3-WQ-001',
   },
 
   onLoad(options) {
-    const { key = 'turbidity', title = '指标', unit = '', value = '' } = options
+    const { key = 'turbidity', title = '指标', unit = '', value = '', deviceId = 'ESP32S3-WQ-001' } = options
     this.setData({
       key,
       title,
       unit,
       current: value,
+      deviceId,
     })
     wx.setNavigationBarTitle({ title: `${title}趋势` })
     this.updateChart('minute')
@@ -81,6 +83,6 @@ Page({
   },
 
   goWarning() {
-    wx.navigateTo({ url: '/pages/warning/warning' })
+    wx.navigateTo({ url: `/pages/warning/warning?deviceId=${this.data.deviceId}` })
   },
 })
