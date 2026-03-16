@@ -1,0 +1,30 @@
+<scroll-view class="page" scroll-y>
+  <view class="card">
+    <view class="title">设备：{{deviceName}}</view>
+    <view class="meta">产品ID：{{productId}}</view>
+    <view class="meta">最近更新：{{lastUpdate}}</view>
+    <view class="row">
+      <text>自动获取（仅本页生效）</text>
+      <switch checked="{{autoEnabled}}" bindchange="onToggleAuto" color="#1f6feb" />
+    </view>
+    <view class="meta">间隔：{{intervalSec}} 秒（去“刷新配置”调整）</view>
+    <button wx:if="{{!autoEnabled}}" class="btn" loading="{{loading}}" bindtap="refreshNow">手动刷新</button>
+  </view>
+
+  <view class="card">
+    <view class="title">设备最新所有数据</view>
+    <block wx:for="{{properties}}" wx:key="identifier">
+      <view class="item" bindtap="openPropertyHistory" data-identifier="{{item.identifier}}" data-name="{{item.name}}" data-value="{{item.value}}">
+        <view class="name">{{item.name}}（{{item.identifier}}）</view>
+        <view class="value">{{item.value}}</view>
+        <view class="meta">时间：{{item.time}} · 类型：{{item.data_type}}</view>
+      </view>
+    </block>
+    <view wx:if="{{properties.length===0}}" class="meta">暂无数据</view>
+  </view>
+
+  <view class="card">
+    <view class="title">功能入口</view>
+    <button class="btn" bindtap="goRefreshConfig">刷新配置</button>
+  </view>
+</scroll-view>
