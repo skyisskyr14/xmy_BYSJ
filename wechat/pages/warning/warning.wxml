@@ -1,0 +1,62 @@
+<scroll-view class="page" scroll-y>
+  <view class="card">
+    <view class="title">设备预警中心</view>
+    <view class="subtitle">当前设备：{{currentDeviceName}}（{{currentDeviceId}}）</view>
+    <scroll-view class="device-scroll" scroll-x>
+      <view class="device-chip-wrap">
+        <block wx:for="{{devices}}" wx:key="id">
+          <view
+            class="device-chip {{item.id === currentDeviceId ? 'active' : ''}}"
+            data-id="{{item.id}}"
+            bindtap="switchDeviceByTap"
+          >
+            <text class="chip-name">{{item.name}}</text>
+            <text class="chip-id">{{item.id}}</text>
+          </view>
+        </block>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="card">
+    <view class="title">预警开关</view>
+    <view class="row">
+      <text>该设备预警开关</text>
+      <switch checked="{{globalEnabled}}" bindchange="onToggleGlobal" color="#1f6feb" />
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="title">提醒方式</view>
+    <block wx:for="{{noticeMethods}}" wx:key="key">
+      <view class="row">
+        <text>{{item.name}}</text>
+        <switch checked="{{item.enabled}}" data-index="{{index}}" bindchange="onToggleMethod" color="#1f6feb" />
+      </view>
+    </block>
+  </view>
+
+  <view class="card">
+    <view class="title">指标阈值配置</view>
+    <block wx:for="{{rules}}" wx:key="key">
+      <view class="rule-box">
+        <view class="row">
+          <text class="rule-name">{{item.name}}</text>
+          <switch checked="{{item.enabled}}" data-index="{{index}}" bindchange="onToggleRule" color="#1f6feb" />
+        </view>
+        <view class="input-row">
+          <view class="input-box">
+            <text class="mini">最小值</text>
+            <input type="digit" value="{{item.min}}" data-index="{{index}}" bindinput="onInputMin" />
+          </view>
+          <view class="input-box">
+            <text class="mini">最大值</text>
+            <input type="digit" value="{{item.max}}" data-index="{{index}}" bindinput="onInputMax" />
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <button class="save-btn" bindtap="saveRules">保存当前设备预警配置</button>
+</scroll-view>

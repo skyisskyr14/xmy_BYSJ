@@ -1,0 +1,47 @@
+<scroll-view class="page" scroll-y>
+  <view class="card">
+    <view class="title">OneNET 初始化配置</view>
+    <view class="field">
+      <text class="label">产品ID（用户填写，默认 gqp5I5JYU8）</text>
+      <input value="{{productId}}" bindinput="onInputProductId" placeholder="例如 gqp5I5JYU8" />
+    </view>
+    <view class="field">
+      <text class="label">authorization（用户填写）</text>
+      <input value="{{authorization}}" bindinput="onInputAuthorization" placeholder="version=2018-10-31&res=..." />
+    </view>
+
+    <view class="actions">
+      <button size="mini" class="bind-btn" bindtap="saveConfig">保存配置</button>
+      <button size="mini" class="bind-btn" loading="{{loading}}" bindtap="initProduct">1. 初始化产品详情</button>
+      <button size="mini" class="warning-btn" loading="{{loading}}" bindtap="fetchDeviceList">2. 获取设备列表</button>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{productInfo}}">
+    <view class="title">产品详情（初始化结果）</view>
+    <view class="meta">产品ID：{{productInfo.product_id}}</view>
+    <view class="meta">产品名：{{productInfo.name}}</view>
+    <view class="meta">设备总数：{{productInfo.own_device_count}}</view>
+    <view class="meta">在线数：{{productInfo.online_device_count}}</view>
+    <view class="meta">离线数：{{productInfo.offline_device_count}}</view>
+  </view>
+
+  <view class="card">
+    <view class="title">设备列表（记录 id + name）</view>
+    <block wx:for="{{devices}}" wx:key="id">
+      <view class="device-item">
+        <view class="name">{{item.name}}</view>
+        <view class="id">ID: {{item.id}}</view>
+        <view class="meta">状态：{{item.status}}</view>
+        <view class="meta">最近活跃：{{item.latest}}</view>
+        <button size="mini" class="warning-btn" data-id="{{item.id}}" bindtap="goDeviceWarning">该设备预警设置</button>
+      </view>
+    </block>
+    <view wx:if="{{devices.length === 0}}" class="meta">暂无设备，请先获取设备列表。</view>
+  </view>
+
+  <view class="card">
+    <view class="title">最近一次接口调试信息</view>
+    <text class="debug-text">{{debugText}}</text>
+  </view>
+</scroll-view>

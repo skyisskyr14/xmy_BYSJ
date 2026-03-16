@@ -1,62 +1,208 @@
-/**index.wxss**/
 page {
+  background: #f2f5f9;
+}
+
+.page {
   height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-.scrollarea {
-  flex: 1;
-  overflow-y: hidden;
-}
-
-.userinfo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: #aaa;
-  width: 80%;
-}
-
-.userinfo-avatar {
-  overflow: hidden;
-  width: 128rpx;
-  height: 128rpx;
-  margin: 20rpx;
-  border-radius: 50%;
-}
-
-.usermotto {
-  margin-top: 200px;
-}
-
-.avatar-wrapper {
-  padding: 0;
-  width: 56px !important;
-  border-radius: 8px;
-  margin-top: 40px;
-  margin-bottom: 40px;
-}
-
-.avatar {
-  display: block;
-  width: 56px;
-  height: 56px;
-}
-
-.nickname-wrapper {
-  display: flex;
-  width: 100%;
-  padding: 16px;
   box-sizing: border-box;
-  border-top: .5px solid rgba(0, 0, 0, 0.1);
-  border-bottom: .5px solid rgba(0, 0, 0, 0.1);
-  color: black;
+  padding: 24rpx;
 }
 
-.nickname-label {
-  width: 105px;
+.card {
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  box-shadow: 0 8rpx 20rpx rgba(24, 65, 120, 0.08);
 }
 
-.nickname-input {
-  flex: 1;
+.hero {
+  background: linear-gradient(135deg, #1f6feb, #6da8ff);
+  color: #ffffff;
+  margin-bottom: 20rpx;
+}
+
+.hero-title {
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.hero-subtitle,
+.hero-time,
+.hero-hint {
+  font-size: 23rpx;
+  margin-top: 10rpx;
+  opacity: 0.95;
+}
+
+.section {
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1b2a41;
+  margin-bottom: 16rpx;
+}
+
+.split-title {
+  margin: 10rpx 2rpx 14rpx;
+}
+
+.device-scroll {
+  white-space: nowrap;
+  margin-bottom: 18rpx;
+}
+
+.device-chip-wrap {
+  display: inline-flex;
+  gap: 14rpx;
+  padding-bottom: 4rpx;
+}
+
+.device-chip {
+  min-width: 220rpx;
+  background: #fff;
+  border: 1px solid #d9e7ff;
+  border-radius: 16rpx;
+  padding: 14rpx 18rpx;
+}
+
+.device-chip.active {
+  background: #1f6feb;
+  border-color: #1f6feb;
+}
+
+.chip-name {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #173158;
+}
+
+.chip-id {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 20rpx;
+  color: #60708a;
+}
+
+.device-chip.active .chip-name,
+.device-chip.active .chip-id {
+  color: #fff;
+}
+
+.device-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12rpx;
+}
+
+.item {
+  padding: 14rpx;
+  border-radius: 14rpx;
+  background: #f7faff;
+}
+
+.label {
+  display: block;
+  font-size: 22rpx;
+  color: #6e7a8d;
+}
+
+.value {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 25rpx;
+  font-weight: 600;
+  color: #183153;
+}
+
+.status.online {
+  color: #16a34a;
+}
+
+.status.offline {
+  color: #dc2626;
+}
+
+.metrics-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.metric-card {
+  padding: 20rpx 24rpx;
+}
+
+.metric-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.metric-name {
+  font-size: 28rpx;
+  color: #1b2a41;
+  font-weight: 600;
+}
+
+.metric-level {
+  font-size: 22rpx;
+  color: #1f6feb;
+  background: #e8f1ff;
+  padding: 4rpx 14rpx;
+  border-radius: 20rpx;
+}
+
+.metric-value-row {
+  margin-top: 12rpx;
+  display: flex;
+  align-items: flex-end;
+}
+
+.metric-value {
+  font-size: 58rpx;
+  font-weight: 700;
+  color: #0f1f38;
+  line-height: 1;
+}
+
+.metric-unit {
+  margin-left: 8rpx;
+  font-size: 24rpx;
+  color: #4d5f79;
+}
+
+.metric-desc,
+.metric-trend {
+  margin-top: 10rpx;
+  font-size: 23rpx;
+  color: #52637d;
+}
+
+.quick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.quick-item {
+  padding: 16rpx;
+  background: #f7faff;
+  border-radius: 14rpx;
+}
+
+.quick-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #173158;
+}
+
+.quick-tip {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: #60708a;
 }
