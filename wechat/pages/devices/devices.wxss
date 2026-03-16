@@ -4,6 +4,10 @@ page{ background:#f2f5f9; }
 .title{ font-size:30rpx; font-weight:600; color:#1b2a41; margin-bottom:12rpx; }
 .field{ margin-bottom:10rpx; }
 .label{ display:block; font-size:22rpx; color:#60708a; margin-bottom:6rpx; }
+.picker-view{ background:#f7faff; border-radius:12rpx; padding:12rpx; font-size:24rpx; color:#223652; }
+.row-inline{ display:flex; align-items:center; justify-content:space-between; margin:12rpx 0; }
+.label-inline{ font-size:22rpx; color:#60708a; }
+.tip{ font-size:21rpx; color:#5b6d87; margin-top:10rpx; }
 input{ background:#f7faff; border-radius:12rpx; padding:12rpx; font-size:24rpx; color:#223652; }
 .op-box{ background:#f7faff; border-radius:14rpx; padding:12rpx; margin-bottom:12rpx; }
 .op-title{ display:block; font-size:22rpx; color:#495972; margin-bottom:8rpx; }
@@ -21,3 +25,4 @@ input{ background:#f7faff; border-radius:12rpx; padding:12rpx; font-size:24rpx; 
 .bind-btn{ background:#1f6feb; color:#fff; border-radius:12rpx; }
 .warning-btn{ background:#eef4ff; color:#1f6feb; border-radius:12rpx; }
 .danger-btn{ background:#fee2e2; color:#b91c1c; border-radius:12rpx; }
+.debug-text{ display:block; white-space:pre-wrap; word-break:break-all; font-size:20rpx; color:#334155; background:#f8fafc; padding:12rpx; border-radius:10rpx; }

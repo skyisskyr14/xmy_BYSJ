@@ -6,17 +6,29 @@
       <input value="{{productId}}" bindinput="onInputProductId" placeholder="请输入产品ID" />
     </view>
     <view class="field">
-      <text class="label">API Key</text>
-      <input value="{{apiKey}}" bindinput="onInputApiKey" placeholder="请输入 API Key" />
+      <text class="label">Token / API Key</text>
+      <input value="{{apiKey}}" bindinput="onInputApiKey" placeholder="示例：version=2022-05-01&res=..." />
     </view>
     <view class="field">
       <text class="label">Base URL</text>
       <input value="{{baseUrl}}" bindinput="onInputBaseUrl" placeholder="https://iot-api.heclouds.com" />
     </view>
+    <view class="field">
+      <text class="label">鉴权头模式</text>
+      <picker range="{{authModeOptions}}" range-key="label" value="{{authModeIndex}}" bindchange="onAuthModeChange">
+        <view class="picker-view">{{authModeOptions[authModeIndex].label}}</view>
+      </picker>
+    </view>
+    <view class="row-inline">
+      <text class="label-inline">启用调试日志</text>
+      <switch checked="{{enableDebug}}" bindchange="onDebugSwitch" color="#1f6feb" />
+    </view>
     <view class="actions">
       <button size="mini" class="bind-btn" bindtap="savePlatformConfig">保存配置</button>
+      <button size="mini" class="warning-btn" loading="{{loading}}" bindtap="probeToken">验证Token</button>
       <button size="mini" class="warning-btn" loading="{{loading}}" bindtap="initFromCloudList">接口初始化设备</button>
     </view>
+    <view class="tip">提示：如果 token 可生成但不可用，优先切换“鉴权头模式”并查看底部调试信息。</view>
   </view>
 
   <view class="card">
@@ -69,4 +81,9 @@
       </view>
     </view>
   </block>
+
+  <view class="card">
+    <view class="title">最近一次接口调试信息</view>
+    <text class="debug-text">{{debugText}}</text>
+  </view>
 </scroll-view>

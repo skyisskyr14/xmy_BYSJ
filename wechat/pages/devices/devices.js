@@ -5,6 +5,13 @@ const fallbackDevices = [
   { id: 'ESP32S3-WQ-002', name: '2号水箱', group: '实验室', status: '在线', latest: '3分钟前', gateway: 'OneNET-Channel-A' },
 ]
 
+const authModeOptions = [
+  { label: 'authorization: token', value: oneNet.AUTH_MODES.AUTHORIZATION_ONLY },
+  { label: 'authorization: Bearer token', value: oneNet.AUTH_MODES.AUTHORIZATION_BEARER },
+  { label: 'api-key: token', value: oneNet.AUTH_MODES.API_KEY_ONLY },
+  { label: 'authorization + api-key', value: oneNet.AUTH_MODES.BOTH },
+]
+
 function normalizeDevice(item) {
   const id = item.id || item.device_name || item.name
   return {
@@ -14,6 +21,16 @@ function normalizeDevice(item) {
     status: item.status || '未知',
     latest: item.latest || '-',
     gateway: item.gateway || 'OneNET',
+  }
+}
+
+function stringifyDebug(errOrRes) {
+  const info = errOrRes?.debugInfo || errOrRes || oneNet.getLastDebugInfo()
+  if (!info) return '暂无调试信息'
+  try {
+    return JSON.stringify(info, null, 2)
+  } catch (e) {
+    return String(info)
   }
 }
 
@@ -27,12 +44,17 @@ Page({
     productId: 'gqp5I5JYU8',
     apiKey: '',
     baseUrl: 'https://iot-api.heclouds.com',
+    authModeOptions,
+    authModeIndex: 0,
+    authMode: oneNet.AUTH_MODES.AUTHORIZATION_ONLY,
+    enableDebug: true,
 
     addDeviceName: '',
     createDeviceName: '',
     deleteDeviceName: '',
 
     loading: false,
+    debugText: '',
   },
 
   onLoad() {
@@ -42,10 +64,16 @@ Page({
 
   loadConfig() {
     const config = oneNet.getConfig()
+    const authModeIndex = Math.max(0, authModeOptions.findIndex((item) => item.value === config.authMode))
+
     this.setData({
       productId: config.productId,
       apiKey: config.apiKey,
       baseUrl: config.baseUrl,
+      authMode: config.authMode,
+      authModeIndex,
+      enableDebug: !!config.debug,
+      debugText: stringifyDebug(),
     })
   },
 
@@ -83,13 +111,31 @@ Page({
     this.setData({ baseUrl: e.detail.value.trim() })
   },
 
+  onAuthModeChange(e) {
+    const index = Number(e.detail.value)
+    this.setData({
+      authModeIndex: index,
+      authMode: authModeOptions[index].value,
+    })
+  },
+
+  onDebugSwitch(e) {
+    this.setData({ enableDebug: e.detail.value })
+  },
+
   savePlatformConfig() {
     oneNet.saveConfig({
       productId: this.data.productId.trim(),
       apiKey: this.data.apiKey,
       baseUrl: this.data.baseUrl.trim(),
+      authMode: this.data.authMode,
+      debug: this.data.enableDebug,
     })
     wx.showToast({ title: '平台配置已保存', icon: 'success' })
+  },
+
+  showDebug(errOrRes) {
+    this.setData({ debugText: stringifyDebug(errOrRes) })
   },
 
   onInputAddDeviceName(e) {
@@ -104,11 +150,26 @@ Page({
     this.setData({ deleteDeviceName: e.detail.value.trim() })
   },
 
+  async probeToken() {
+    this.setData({ loading: true })
+    try {
+      const res = await oneNet.probeToken()
+      this.showDebug(res)
+      wx.showToast({ title: 'Token可用（请求成功）', icon: 'success' })
+    } catch (err) {
+      this.showDebug(err)
+      wx.showToast({ title: err.message || 'Token不可用', icon: 'none' })
+    } finally {
+      this.setData({ loading: false })
+    }
+  },
+
   async initFromCloudList() {
     this.setData({ loading: true })
     try {
       const res = await oneNet.listDevices()
-      const list = res.data?.list || res.data || []
+      this.showDebug(res)
+      const list = res.data?.list || res.data?.devices || res.data || []
       if (!Array.isArray(list) || !list.length) {
         wx.showToast({ title: '接口无设备列表，保留本地数据', icon: 'none' })
         return
@@ -120,6 +181,7 @@ Page({
       this.applyFilter(this.data.currentGroup)
       wx.showToast({ title: '设备列表已初始化', icon: 'success' })
     } catch (err) {
+      this.showDebug(err)
       wx.showToast({ title: err.message || '初始化失败', icon: 'none' })
     } finally {
       this.setData({ loading: false })
@@ -135,7 +197,8 @@ Page({
 
     this.setData({ loading: true })
     try {
-      await oneNet.queryDeviceDetail(name)
+      const res = await oneNet.queryDeviceDetail(name)
+      this.showDebug(res)
       const exists = this.data.devices.some((item) => item.id === name || item.name === name)
       if (exists) {
         wx.showToast({ title: '本地已存在该设备', icon: 'none' })
@@ -147,6 +210,7 @@ Page({
       this.applyFilter(this.data.currentGroup)
       wx.showToast({ title: '添加成功', icon: 'success' })
     } catch (err) {
+      this.showDebug(err)
       wx.showToast({ title: err.message || '设备不存在或查询失败', icon: 'none' })
     } finally {
       this.setData({ loading: false })
@@ -162,7 +226,8 @@ Page({
 
     this.setData({ loading: true })
     try {
-      await oneNet.createDevice(name)
+      const res = await oneNet.createDevice(name)
+      this.showDebug(res)
       const exists = this.data.devices.some((item) => item.id === name || item.name === name)
       const newList = exists
         ? this.data.devices
@@ -172,6 +237,7 @@ Page({
       this.applyFilter(this.data.currentGroup)
       wx.showToast({ title: '创建设备成功', icon: 'success' })
     } catch (err) {
+      this.showDebug(err)
       wx.showToast({ title: err.message || '创建设备失败', icon: 'none' })
     } finally {
       this.setData({ loading: false })
@@ -187,13 +253,15 @@ Page({
 
     this.setData({ loading: true })
     try {
-      await oneNet.deleteDevice(name)
+      const res = await oneNet.deleteDevice(name)
+      this.showDebug(res)
       const newList = this.data.devices.filter((item) => item.id !== name && item.name !== name)
       oneNet.saveLocalDevices(newList)
       this.setData({ devices: newList, deleteDeviceName: '' })
       this.applyFilter(this.data.currentGroup)
       wx.showToast({ title: '删除成功', icon: 'success' })
     } catch (err) {
+      this.showDebug(err)
       wx.showToast({ title: err.message || '删除失败', icon: 'none' })
     } finally {
       this.setData({ loading: false })
