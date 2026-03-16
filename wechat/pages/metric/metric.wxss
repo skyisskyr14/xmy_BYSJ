@@ -1,0 +1,21 @@
+page { background: #f2f5f9; }
+.page { padding: 24rpx; }
+.card { background:#fff; border-radius:20rpx; padding:22rpx; margin-bottom:18rpx; }
+.overview { background: linear-gradient(135deg,#1f6feb,#6da8ff); color:#fff; }
+.title{ font-size:30rpx; font-weight:600; }
+.value-row{ margin-top:12rpx; display:flex; align-items:flex-end; }
+.value{ font-size:64rpx; font-weight:700; line-height:1; }
+.unit{ margin-left:8rpx; font-size:24rpx; }
+.sub{ margin-top:10rpx; font-size:22rpx; opacity:.95; }
+.tabs{ display:flex; gap:12rpx; margin-bottom:18rpx; }
+.tab{ flex:1; text-align:center; padding:14rpx 0; border-radius:14rpx; background:#e9edf5; color:#495972; }
+.tab.active{ background:#1f6feb; color:#fff; }
+.chart-title{ font-size:28rpx; font-weight:600; color:#21314d; margin-bottom:12rpx; }
+.chart-wrap{ display:flex; align-items:flex-end; justify-content:space-between; height:190rpx; }
+.bar-item{ width:16%; display:flex; flex-direction:column; align-items:center; }
+.bar{ width:28rpx; border-radius:10rpx 10rpx 0 0; background:#1f6feb; }
+.bar-value{ font-size:20rpx; color:#51627d; margin-top:8rpx; }
+.bar-label{ font-size:19rpx; color:#7a879d; margin-top:4rpx; }
+.stat-item{ display:flex; justify-content:space-between; font-size:24rpx; color:#2a3a54; padding:10rpx 0; border-bottom:1px solid #eef2f8; }
+.stat-item:last-child{ border-bottom:none; }
+.warn-btn{ margin-top:8rpx; background:#1f6feb; color:#fff; border-radius:16rpx; }
