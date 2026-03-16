@@ -110,6 +110,10 @@ Page({
       title: '该功能将随 OneNET 联调后开放',
       icon: 'none',
     })
+
+    setTimeout(() => {
+      wx.stopPullDownRefresh()
+    }, 400)
   },
 
   onPullDownRefresh() {
