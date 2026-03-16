@@ -95,6 +95,10 @@ Page({
     wx.navigateTo({
       url: `/pages/metric/metric?key=${key}&title=${title}&unit=${unit || ''}&value=${value}&deviceId=${this.data.device.id}`,
     })
+
+    setTimeout(() => {
+      wx.stopPullDownRefresh()
+    }, 400)
   },
 
   goQuickAction(e) {
@@ -112,6 +116,10 @@ Page({
       title: '该功能将随 OneNET 联调后开放',
       icon: 'none',
     })
+
+    setTimeout(() => {
+      wx.stopPullDownRefresh()
+    }, 400)
   },
 
   onShow() {
