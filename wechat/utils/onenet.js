@@ -25,6 +25,7 @@ const ENDPOINTS = {
   queryDeviceDetail: '/thingmodel/query-device-detail',
   createDevice: '/thingmodel/create-device',
   deleteDevice: '/thingmodel/delete-device',
+  queryDeviceProperty: '/thingmodel/query-device-property',
 }
 
 function getConfig() {
@@ -216,6 +217,15 @@ function createDevice(deviceName) {
   })
 }
 
+function queryDeviceProperty(deviceName) {
+  const { productId } = getConfig()
+  return requestApi({
+    method: 'GET',
+    path: ENDPOINTS.queryDeviceProperty,
+    data: { product_id: productId, device_name: deviceName },
+  })
+}
+
 function deleteDevice(deviceName) {
   const { productId } = getConfig()
   return requestApi({
@@ -226,8 +236,8 @@ function deleteDevice(deviceName) {
 }
 
 // 用于调试 token 是否有效；优先走列表接口
-function probeToken() {
-  return listDevices()
+function probeToken(deviceName = '01') {
+  return queryDeviceProperty(deviceName)
 }
 
 module.exports = {
@@ -243,6 +253,7 @@ module.exports = {
   requestApi,
   listDevices,
   queryDeviceDetail,
+  queryDeviceProperty,
   createDevice,
   deleteDevice,
   probeToken,

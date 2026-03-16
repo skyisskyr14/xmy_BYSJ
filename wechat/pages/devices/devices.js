@@ -48,6 +48,7 @@ Page({
     authModeIndex: 0,
     authMode: oneNet.AUTH_MODES.AUTHORIZATION_ONLY,
     enableDebug: true,
+    probeDeviceName: '01',
 
     addDeviceName: '',
     createDeviceName: '',
@@ -150,12 +151,17 @@ Page({
     this.setData({ deleteDeviceName: e.detail.value.trim() })
   },
 
+  onInputProbeDeviceName(e) {
+    this.setData({ probeDeviceName: e.detail.value.trim() })
+  },
+
   async probeToken() {
     this.setData({ loading: true })
     try {
-      const res = await oneNet.probeToken()
+      const probeName = this.data.probeDeviceName || '01'
+      const res = await oneNet.probeToken(probeName)
       this.showDebug(res)
-      wx.showToast({ title: 'Token可用（请求成功）', icon: 'success' })
+      wx.showToast({ title: 'Token可用（属性接口成功）', icon: 'success' })
     } catch (err) {
       this.showDebug(err)
       wx.showToast({ title: err.message || 'Token不可用', icon: 'none' })

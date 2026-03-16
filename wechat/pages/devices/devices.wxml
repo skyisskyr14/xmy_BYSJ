@@ -23,12 +23,16 @@
       <text class="label-inline">启用调试日志</text>
       <switch checked="{{enableDebug}}" bindchange="onDebugSwitch" color="#1f6feb" />
     </view>
+    <view class="field">
+      <text class="label">Token验证设备名（走 query-device-property）</text>
+      <input value="{{probeDeviceName}}" bindinput="onInputProbeDeviceName" placeholder="例如 01" />
+    </view>
     <view class="actions">
       <button size="mini" class="bind-btn" bindtap="savePlatformConfig">保存配置</button>
       <button size="mini" class="warning-btn" loading="{{loading}}" bindtap="probeToken">验证Token</button>
       <button size="mini" class="warning-btn" loading="{{loading}}" bindtap="initFromCloudList">接口初始化设备</button>
     </view>
-    <view class="tip">提示：如果 token 可生成但不可用，优先切换“鉴权头模式”并查看底部调试信息。</view>
+    <view class="tip">提示：已按你成功请求对齐：GET /thingmodel/query-device-property + authorization 头；先把鉴权模式设为 authorization: token。</view>
   </view>
 
   <view class="card">
