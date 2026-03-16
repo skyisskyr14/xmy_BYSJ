@@ -1,0 +1,38 @@
+file(GLOB MAIN_SRCS
+    "*.c"
+    "tft/*.c"
+    "turbidity/*.c"
+    "touch/*.c"
+    "wifi/*.c"
+    "ui/*.c"
+    "sensor/*.c"
+    "tds/*.c"
+    "temp/*.c"
+    "ph/*.c"
+)
+
+idf_component_register(
+    SRCS
+        ${MAIN_SRCS}
+    INCLUDE_DIRS
+        "."
+        "tft"
+        "turbidity"
+        "touch"
+        "wifi"
+        "ui"
+        "sensor"
+        "tds"
+        "temp"
+        "ph"
+    REQUIRES
+        esp_adc
+        driver
+        esp_lcd
+        esp_lcd_ili9341
+        lvgl
+        esp_wifi
+        esp_event
+        esp_netif
+        nvs_flash
+)
