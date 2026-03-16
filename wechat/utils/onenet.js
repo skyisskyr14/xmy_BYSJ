@@ -2,30 +2,18 @@ const STORAGE_KEYS = {
   config: 'onenet_config',
   devices: 'onenet_devices',
   debug: 'onenet_last_debug',
-}
-
-const AUTH_MODES = {
-  AUTHORIZATION_ONLY: 'authorization',
-  AUTHORIZATION_BEARER: 'authorization_bearer',
-  API_KEY_ONLY: 'api_key',
-  BOTH: 'both',
+  product: 'onenet_product',
 }
 
 const DEFAULT_CONFIG = {
   baseUrl: 'https://iot-api.heclouds.com',
   productId: 'gqp5I5JYU8',
-  apiKey: '',
-  authMode: AUTH_MODES.AUTHORIZATION_ONLY,
-  debug: true,
+  authorization: '',
 }
 
-// 统一维护接口路径，后续若文档更新仅需改这里
 const ENDPOINTS = {
-  listDevices: '/thingmodel/query-devices',
-  queryDeviceDetail: '/thingmodel/query-device-detail',
-  createDevice: '/thingmodel/create-device',
-  deleteDevice: '/thingmodel/delete-device',
-  queryDeviceProperty: '/thingmodel/query-device-property',
+  productDetail: '/product/detail',
+  deviceList: '/device/list',
 }
 
 function getConfig() {
@@ -51,77 +39,33 @@ function saveLocalDevices(devices) {
   wx.setStorageSync(STORAGE_KEYS.devices, devices)
 }
 
-function saveLastDebugInfo(debugInfo) {
-  wx.setStorageSync(STORAGE_KEYS.debug, debugInfo)
+function getProductInfo() {
+  return wx.getStorageSync(STORAGE_KEYS.product) || null
+}
+
+function saveProductInfo(info) {
+  wx.setStorageSync(STORAGE_KEYS.product, info)
 }
 
 function getLastDebugInfo() {
   return wx.getStorageSync(STORAGE_KEYS.debug) || null
 }
 
-function buildHeaders(config) {
-  const token = (config.apiKey || '').trim()
-  const headers = {
-    'content-type': 'application/json',
-  }
-
-  if (!token) {
-    return headers
-  }
-
-  if (config.authMode === AUTH_MODES.AUTHORIZATION_ONLY) {
-    headers.authorization = token
-  } else if (config.authMode === AUTH_MODES.AUTHORIZATION_BEARER) {
-    headers.authorization = `Bearer ${token}`
-  } else if (config.authMode === AUTH_MODES.API_KEY_ONLY) {
-    headers['api-key'] = token
-  } else if (config.authMode === AUTH_MODES.BOTH) {
-    headers.authorization = token
-    headers['api-key'] = token
-  }
-
-  return headers
+function saveLastDebugInfo(info) {
+  wx.setStorageSync(STORAGE_KEYS.debug, info)
 }
 
-function extractMessage(body, statusCode) {
-  return body.msg || body.message || body.error || body.err_msg || `HTTP ${statusCode}`
-}
-
-function isBodySuccess(body) {
-  if (body === null || body === undefined) return true
-  if (typeof body !== 'object') return true
-
-  // 常见成功语义
-  if (body.code === 0 || body.errno === 0 || body.success === true) return true
-
-  // 常见失败语义
-  if (typeof body.code === 'number' && body.code !== 0) return false
-  if (typeof body.errno === 'number' && body.errno !== 0) return false
-  if (body.success === false) return false
-
-  // 兼容无 code 字段但 HTTP 为 2xx 的情况
-  return true
-}
-
-function normalizeData(body) {
-  if (body === null || body === undefined) return {}
-  if (typeof body !== 'object') return { raw: body }
-  if (body.data !== undefined) return body.data
-  if (body.result !== undefined) return body.result
-  return body
-}
-
-function requestApi({ method = 'GET', path, data = {}, requireToken = true, customHeaders = {} }) {
+function requestApi({ method = 'GET', path, data = {} }) {
   const config = getConfig()
 
-  if (requireToken && !config.apiKey) {
-    return Promise.reject(new Error('请先在设备管理页配置 OneNET Token/API Key'))
+  if (!config.authorization) {
+    return Promise.reject(new Error('请先填写 authorization'))
   }
 
   const url = `${config.baseUrl}${path}`
   const headers = {
-    ...buildHeaders(config),
-    ...customHeaders,
+    authorization: config.authorization,
+    Accept: '*/*',
   }
 
   const reqMeta = {
@@ -130,7 +74,6 @@ function requestApi({ method = 'GET', path, data = {}, requireToken = true, cust
     requestData: data,
     requestHeaders: headers,
     time: new Date().toISOString(),
-    authMode: config.authMode,
   }
 
   return new Promise((resolve, reject) => {
@@ -142,23 +85,19 @@ function requestApi({ method = 'GET', path, data = {}, requireToken = true, cust
       success: (res) => {
         const body = res.data || {}
         const okHttp = res.statusCode >= 200 && res.statusCode < 300
-        const okBody = isBodySuccess(body)
+        const okBody = body && body.code === 0
 
         const debugInfo = {
           ...reqMeta,
           statusCode: res.statusCode,
           responseHeaders: res.header || {},
           responseBody: body,
-          responseDataExtracted: normalizeData(body),
           success: okHttp && okBody,
         }
-
-        if (config.debug) {
-          saveLastDebugInfo(debugInfo)
-        }
+        saveLastDebugInfo(debugInfo)
 
         if (!okHttp || !okBody) {
-          const msg = extractMessage(body, res.statusCode)
+          const msg = body.msg || body.message || `HTTP ${res.statusCode}`
           const err = new Error(msg)
           err.debugInfo = debugInfo
           reject(err)
@@ -167,7 +106,7 @@ function requestApi({ method = 'GET', path, data = {}, requireToken = true, cust
 
         resolve({
           raw: body,
-          data: normalizeData(body),
+          data: body.data,
           debugInfo,
         })
       },
@@ -177,11 +116,7 @@ function requestApi({ method = 'GET', path, data = {}, requireToken = true, cust
           success: false,
           networkError: err,
         }
-
-        if (config.debug) {
-          saveLastDebugInfo(debugInfo)
-        }
-
+        saveLastDebugInfo(debugInfo)
         const wrappedErr = new Error(err.errMsg || '网络请求失败')
         wrappedErr.debugInfo = debugInfo
         reject(wrappedErr)
@@ -190,71 +125,35 @@ function requestApi({ method = 'GET', path, data = {}, requireToken = true, cust
   })
 }
 
-function listDevices() {
-  const { productId } = getConfig()
+// 1) 产品详情接口：用于初始化与校验 product_id + authorization
+function getProductDetail(productId) {
   return requestApi({
     method: 'GET',
-    path: ENDPOINTS.listDevices,
+    path: ENDPOINTS.productDetail,
     data: { product_id: productId },
   })
 }
 
-function queryDeviceDetail(deviceName) {
-  const { productId } = getConfig()
+// 2) 获取设备列表接口：初始化成功后获取设备 id/name
+function getDeviceList(productId) {
   return requestApi({
     method: 'GET',
-    path: ENDPOINTS.queryDeviceDetail,
-    data: { product_id: productId, device_name: deviceName },
+    path: ENDPOINTS.deviceList,
+    data: { product_id: productId },
   })
-}
-
-function createDevice(deviceName) {
-  const { productId } = getConfig()
-  return requestApi({
-    method: 'POST',
-    path: ENDPOINTS.createDevice,
-    data: { product_id: productId, device_name: deviceName },
-  })
-}
-
-function queryDeviceProperty(deviceName) {
-  const { productId } = getConfig()
-  return requestApi({
-    method: 'GET',
-    path: ENDPOINTS.queryDeviceProperty,
-    data: { product_id: productId, device_name: deviceName },
-  })
-}
-
-function deleteDevice(deviceName) {
-  const { productId } = getConfig()
-  return requestApi({
-    method: 'POST',
-    path: ENDPOINTS.deleteDevice,
-    data: { product_id: productId, device_name: deviceName },
-  })
-}
-
-// 用于调试 token 是否有效；优先走列表接口
-function probeToken(deviceName = '01') {
-  return queryDeviceProperty(deviceName)
 }
 
 module.exports = {
   STORAGE_KEYS,
-  AUTH_MODES,
   DEFAULT_CONFIG,
   ENDPOINTS,
   getConfig,
   saveConfig,
   getLocalDevices,
   saveLocalDevices,
+  getProductInfo,
+  saveProductInfo,
   getLastDebugInfo,
-  requestApi,
-  listDevices,
-  queryDeviceDetail,
-  queryDeviceProperty,
-  createDevice,
-  deleteDevice,
-  probeToken,
+  getProductDetail,
+  getDeviceList,
 }

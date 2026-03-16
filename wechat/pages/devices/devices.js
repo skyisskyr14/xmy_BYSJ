@@ -1,26 +1,11 @@
 const oneNet = require('../../utils/onenet')
 
-const fallbackDevices = [
-  { id: 'ESP32S3-WQ-001', name: '1号水箱', group: '实验室', status: '在线', latest: '1分钟前', gateway: 'OneNET-Channel-A' },
-  { id: 'ESP32S3-WQ-002', name: '2号水箱', group: '实验室', status: '在线', latest: '3分钟前', gateway: 'OneNET-Channel-A' },
-]
-
-const authModeOptions = [
-  { label: 'authorization: token', value: oneNet.AUTH_MODES.AUTHORIZATION_ONLY },
-  { label: 'authorization: Bearer token', value: oneNet.AUTH_MODES.AUTHORIZATION_BEARER },
-  { label: 'api-key: token', value: oneNet.AUTH_MODES.API_KEY_ONLY },
-  { label: 'authorization + api-key', value: oneNet.AUTH_MODES.BOTH },
-]
-
 function normalizeDevice(item) {
-  const id = item.id || item.device_name || item.name
   return {
-    id,
-    name: item.name || item.device_name || id,
-    group: item.group || '未分组',
-    status: item.status || '未知',
-    latest: item.latest || '-',
-    gateway: item.gateway || 'OneNET',
+    id: String(item.did || item.name || ''),
+    name: item.name || String(item.did || ''),
+    status: item.status === 0 ? '在线' : item.status === 2 ? '离线' : '未知',
+    latest: item.last_time || '-',
   }
 }
 
@@ -36,239 +21,109 @@ function stringifyDebug(errOrRes) {
 
 Page({
   data: {
-    groupFilter: ['全部', '实验室', '户外', '未分组'],
-    currentGroup: '全部',
-    devices: [],
-    shownDevices: [],
-
     productId: 'gqp5I5JYU8',
-    apiKey: '',
-    baseUrl: 'https://iot-api.heclouds.com',
-    authModeOptions,
-    authModeIndex: 0,
-    authMode: oneNet.AUTH_MODES.AUTHORIZATION_ONLY,
-    enableDebug: true,
-    probeDeviceName: '01',
-
-    addDeviceName: '',
-    createDeviceName: '',
-    deleteDeviceName: '',
+    authorization: '',
 
     loading: false,
+    initialized: false,
+
+    productInfo: null,
+    devices: [],
     debugText: '',
   },
 
   onLoad() {
     this.loadConfig()
-    this.loadLocalDevices()
+    this.loadLocalData()
+  },
+
+  onShow() {
+    this.loadLocalData()
   },
 
   loadConfig() {
     const config = oneNet.getConfig()
-    const authModeIndex = Math.max(0, authModeOptions.findIndex((item) => item.value === config.authMode))
-
     this.setData({
       productId: config.productId,
-      apiKey: config.apiKey,
-      baseUrl: config.baseUrl,
-      authMode: config.authMode,
-      authModeIndex,
-      enableDebug: !!config.debug,
+      authorization: config.authorization,
       debugText: stringifyDebug(),
     })
   },
 
-  loadLocalDevices() {
-    let devices = oneNet.getLocalDevices()
-    if (!devices.length) {
-      devices = fallbackDevices
-      oneNet.saveLocalDevices(devices)
-    }
-    this.setData({ devices })
-    this.applyFilter(this.data.currentGroup)
-  },
-
-  changeGroup(e) {
-    this.applyFilter(e.currentTarget.dataset.group)
-  },
-
-  applyFilter(group) {
-    const shownDevices = this.data.devices.filter((item) => group === '全部' || item.group === group)
+  loadLocalData() {
+    const productInfo = oneNet.getProductInfo()
+    const devices = oneNet.getLocalDevices()
     this.setData({
-      currentGroup: group,
-      shownDevices,
+      productInfo,
+      devices,
+      initialized: !!productInfo,
     })
   },
 
   onInputProductId(e) {
-    this.setData({ productId: e.detail.value })
+    this.setData({ productId: e.detail.value.trim() })
   },
 
-  onInputApiKey(e) {
-    this.setData({ apiKey: e.detail.value.trim() })
+  onInputAuthorization(e) {
+    this.setData({ authorization: e.detail.value.trim() })
   },
 
-  onInputBaseUrl(e) {
-    this.setData({ baseUrl: e.detail.value.trim() })
-  },
-
-  onAuthModeChange(e) {
-    const index = Number(e.detail.value)
-    this.setData({
-      authModeIndex: index,
-      authMode: authModeOptions[index].value,
-    })
-  },
-
-  onDebugSwitch(e) {
-    this.setData({ enableDebug: e.detail.value })
-  },
-
-  savePlatformConfig() {
+  saveConfig() {
     oneNet.saveConfig({
-      productId: this.data.productId.trim(),
-      apiKey: this.data.apiKey,
-      baseUrl: this.data.baseUrl.trim(),
-      authMode: this.data.authMode,
-      debug: this.data.enableDebug,
+      productId: this.data.productId,
+      authorization: this.data.authorization,
     })
-    wx.showToast({ title: '平台配置已保存', icon: 'success' })
+    wx.showToast({ title: '配置已保存', icon: 'success' })
   },
 
   showDebug(errOrRes) {
     this.setData({ debugText: stringifyDebug(errOrRes) })
   },
 
-  onInputAddDeviceName(e) {
-    this.setData({ addDeviceName: e.detail.value.trim() })
-  },
+  async initProduct() {
+    if (!this.data.productId || !this.data.authorization) {
+      wx.showToast({ title: '请填写产品ID和authorization', icon: 'none' })
+      return
+    }
 
-  onInputCreateDeviceName(e) {
-    this.setData({ createDeviceName: e.detail.value.trim() })
-  },
-
-  onInputDeleteDeviceName(e) {
-    this.setData({ deleteDeviceName: e.detail.value.trim() })
-  },
-
-  onInputProbeDeviceName(e) {
-    this.setData({ probeDeviceName: e.detail.value.trim() })
-  },
-
-  async probeToken() {
+    this.saveConfig()
     this.setData({ loading: true })
+
     try {
-      const probeName = this.data.probeDeviceName || '01'
-      const res = await oneNet.probeToken(probeName)
+      const res = await oneNet.getProductDetail(this.data.productId)
       this.showDebug(res)
-      wx.showToast({ title: 'Token可用（属性接口成功）', icon: 'success' })
+      oneNet.saveProductInfo(res.data)
+      this.setData({
+        productInfo: res.data,
+        initialized: true,
+      })
+      wx.showToast({ title: '产品初始化成功', icon: 'success' })
     } catch (err) {
       this.showDebug(err)
-      wx.showToast({ title: err.message || 'Token不可用', icon: 'none' })
+      wx.showToast({ title: err.message || '产品初始化失败', icon: 'none' })
     } finally {
       this.setData({ loading: false })
     }
   },
 
-  async initFromCloudList() {
+  async fetchDeviceList() {
+    if (!this.data.initialized) {
+      wx.showToast({ title: '请先完成产品初始化', icon: 'none' })
+      return
+    }
+
     this.setData({ loading: true })
     try {
-      const res = await oneNet.listDevices()
+      const res = await oneNet.getDeviceList(this.data.productId)
       this.showDebug(res)
-      const list = res.data?.list || res.data?.devices || res.data || []
-      if (!Array.isArray(list) || !list.length) {
-        wx.showToast({ title: '接口无设备列表，保留本地数据', icon: 'none' })
-        return
-      }
-
-      const devices = list.map(normalizeDevice)
+      const list = res.data?.list || []
+      const devices = Array.isArray(list) ? list.map(normalizeDevice) : []
       oneNet.saveLocalDevices(devices)
       this.setData({ devices })
-      this.applyFilter(this.data.currentGroup)
-      wx.showToast({ title: '设备列表已初始化', icon: 'success' })
+      wx.showToast({ title: '设备列表获取成功', icon: 'success' })
     } catch (err) {
       this.showDebug(err)
-      wx.showToast({ title: err.message || '初始化失败', icon: 'none' })
-    } finally {
-      this.setData({ loading: false })
-    }
-  },
-
-  async addExistingDevice() {
-    const name = this.data.addDeviceName
-    if (!name) {
-      wx.showToast({ title: '请输入设备名', icon: 'none' })
-      return
-    }
-
-    this.setData({ loading: true })
-    try {
-      const res = await oneNet.queryDeviceDetail(name)
-      this.showDebug(res)
-      const exists = this.data.devices.some((item) => item.id === name || item.name === name)
-      if (exists) {
-        wx.showToast({ title: '本地已存在该设备', icon: 'none' })
-        return
-      }
-      const newList = [...this.data.devices, normalizeDevice({ id: name, name, status: '在线' })]
-      oneNet.saveLocalDevices(newList)
-      this.setData({ devices: newList, addDeviceName: '' })
-      this.applyFilter(this.data.currentGroup)
-      wx.showToast({ title: '添加成功', icon: 'success' })
-    } catch (err) {
-      this.showDebug(err)
-      wx.showToast({ title: err.message || '设备不存在或查询失败', icon: 'none' })
-    } finally {
-      this.setData({ loading: false })
-    }
-  },
-
-  async createNewDevice() {
-    const name = this.data.createDeviceName
-    if (!name) {
-      wx.showToast({ title: '请输入设备名', icon: 'none' })
-      return
-    }
-
-    this.setData({ loading: true })
-    try {
-      const res = await oneNet.createDevice(name)
-      this.showDebug(res)
-      const exists = this.data.devices.some((item) => item.id === name || item.name === name)
-      const newList = exists
-        ? this.data.devices
-        : [...this.data.devices, normalizeDevice({ id: name, name, status: '在线' })]
-      oneNet.saveLocalDevices(newList)
-      this.setData({ devices: newList, createDeviceName: '' })
-      this.applyFilter(this.data.currentGroup)
-      wx.showToast({ title: '创建设备成功', icon: 'success' })
-    } catch (err) {
-      this.showDebug(err)
-      wx.showToast({ title: err.message || '创建设备失败', icon: 'none' })
-    } finally {
-      this.setData({ loading: false })
-    }
-  },
-
-  async deleteDevice() {
-    const name = this.data.deleteDeviceName
-    if (!name) {
-      wx.showToast({ title: '请输入设备名', icon: 'none' })
-      return
-    }
-
-    this.setData({ loading: true })
-    try {
-      const res = await oneNet.deleteDevice(name)
-      this.showDebug(res)
-      const newList = this.data.devices.filter((item) => item.id !== name && item.name !== name)
-      oneNet.saveLocalDevices(newList)
-      this.setData({ devices: newList, deleteDeviceName: '' })
-      this.applyFilter(this.data.currentGroup)
-      wx.showToast({ title: '删除成功', icon: 'success' })
-    } catch (err) {
-      this.showDebug(err)
-      wx.showToast({ title: err.message || '删除失败', icon: 'none' })
+      wx.showToast({ title: err.message || '获取设备列表失败', icon: 'none' })
     } finally {
       this.setData({ loading: false })
     }

@@ -1,90 +1,44 @@
 <scroll-view class="page" scroll-y>
   <view class="card">
-    <view class="title">OneNET 平台配置</view>
+    <view class="title">OneNET 初始化配置</view>
     <view class="field">
-      <text class="label">产品ID（默认）</text>
-      <input value="{{productId}}" bindinput="onInputProductId" placeholder="请输入产品ID" />
-    </view>
-    <view class="field">
-      <text class="label">Token / API Key</text>
-      <input value="{{apiKey}}" bindinput="onInputApiKey" placeholder="示例：version=2022-05-01&res=..." />
+      <text class="label">产品ID（用户填写，默认 gqp5I5JYU8）</text>
+      <input value="{{productId}}" bindinput="onInputProductId" placeholder="例如 gqp5I5JYU8" />
     </view>
     <view class="field">
-      <text class="label">Base URL</text>
-      <input value="{{baseUrl}}" bindinput="onInputBaseUrl" placeholder="https://iot-api.heclouds.com" />
+      <text class="label">authorization（用户填写）</text>
+      <input value="{{authorization}}" bindinput="onInputAuthorization" placeholder="version=2018-10-31&res=..." />
     </view>
-    <view class="field">
-      <text class="label">鉴权头模式</text>
-      <picker range="{{authModeOptions}}" range-key="label" value="{{authModeIndex}}" bindchange="onAuthModeChange">
-        <view class="picker-view">{{authModeOptions[authModeIndex].label}}</view>
-      </picker>
-    </view>
-    <view class="row-inline">
-      <text class="label-inline">启用调试日志</text>
-      <switch checked="{{enableDebug}}" bindchange="onDebugSwitch" color="#1f6feb" />
-    </view>
-    <view class="field">
-      <text class="label">Token验证设备名（走 query-device-property）</text>
-      <input value="{{probeDeviceName}}" bindinput="onInputProbeDeviceName" placeholder="例如 01" />
-    </view>
+
     <view class="actions">
-      <button size="mini" class="bind-btn" bindtap="savePlatformConfig">保存配置</button>
-      <button size="mini" class="warning-btn" loading="{{loading}}" bindtap="probeToken">验证Token</button>
-      <button size="mini" class="warning-btn" loading="{{loading}}" bindtap="initFromCloudList">接口初始化设备</button>
+      <button size="mini" class="bind-btn" bindtap="saveConfig">保存配置</button>
+      <button size="mini" class="bind-btn" loading="{{loading}}" bindtap="initProduct">1. 初始化产品详情</button>
+      <button size="mini" class="warning-btn" loading="{{loading}}" bindtap="fetchDeviceList">2. 获取设备列表</button>
     </view>
-    <view class="tip">提示：已按你成功请求对齐：GET /thingmodel/query-device-property + authorization 头；先把鉴权模式设为 authorization: token。</view>
+  </view>
+
+  <view class="card" wx:if="{{productInfo}}">
+    <view class="title">产品详情（初始化结果）</view>
+    <view class="meta">产品ID：{{productInfo.product_id}}</view>
+    <view class="meta">产品名：{{productInfo.name}}</view>
+    <view class="meta">设备总数：{{productInfo.own_device_count}}</view>
+    <view class="meta">在线数：{{productInfo.online_device_count}}</view>
+    <view class="meta">离线数：{{productInfo.offline_device_count}}</view>
   </view>
 
   <view class="card">
-    <view class="title">设备管理操作</view>
-
-    <view class="op-box">
-      <text class="op-title">添加已有设备（先查详情判断存在）</text>
-      <input value="{{addDeviceName}}" bindinput="onInputAddDeviceName" placeholder="设备名" />
-      <button size="mini" class="bind-btn" loading="{{loading}}" bindtap="addExistingDevice">添加设备</button>
-    </view>
-
-    <view class="op-box">
-      <text class="op-title">创建设备</text>
-      <input value="{{createDeviceName}}" bindinput="onInputCreateDeviceName" placeholder="设备名" />
-      <button size="mini" class="bind-btn" loading="{{loading}}" bindtap="createNewDevice">创建设备</button>
-    </view>
-
-    <view class="op-box">
-      <text class="op-title">删除设备</text>
-      <input value="{{deleteDeviceName}}" bindinput="onInputDeleteDeviceName" placeholder="设备名" />
-      <button size="mini" class="danger-btn" loading="{{loading}}" bindtap="deleteDevice">删除设备</button>
-    </view>
-  </view>
-
-  <view class="card">
-    <view class="title">多设备接入管理</view>
-    <view class="group-row">
-      <block wx:for="{{groupFilter}}" wx:key="*this">
-        <view class="group-chip {{item === currentGroup ? 'active' : ''}}" data-group="{{item}}" bindtap="changeGroup">{{item}}</view>
-      </block>
-    </view>
-  </view>
-
-  <block wx:for="{{shownDevices}}" wx:key="id">
-    <view class="card device-card">
-      <view class="head-row">
-        <view>
-          <view class="name">{{item.name}}</view>
-          <view class="id">{{item.id}}</view>
-        </view>
-        <view class="status {{item.status === '在线' ? 'online' : 'offline'}}">{{item.status}}</view>
-      </view>
-
-      <view class="meta">分组：{{item.group}}</view>
-      <view class="meta">最近上报：{{item.latest}}</view>
-      <view class="meta">接入通道：{{item.gateway}}</view>
-
-      <view class="actions">
+    <view class="title">设备列表（记录 id + name）</view>
+    <block wx:for="{{devices}}" wx:key="id">
+      <view class="device-item">
+        <view class="name">{{item.name}}</view>
+        <view class="id">ID: {{item.id}}</view>
+        <view class="meta">状态：{{item.status}}</view>
+        <view class="meta">最近活跃：{{item.latest}}</view>
         <button size="mini" class="warning-btn" data-id="{{item.id}}" bindtap="goDeviceWarning">该设备预警设置</button>
       </view>
-    </view>
-  </block>
+    </block>
+    <view wx:if="{{devices.length === 0}}" class="meta">暂无设备，请先获取设备列表。</view>
+  </view>
 
   <view class="card">
     <view class="title">最近一次接口调试信息</view>
