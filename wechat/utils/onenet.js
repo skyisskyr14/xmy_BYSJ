@@ -1,8 +1,10 @@
 const STORAGE_KEYS = {
   config: 'onenet_config',
   devices: 'onenet_devices',
-  debug: 'onenet_last_debug',
   product: 'onenet_product',
+  debug: 'onenet_last_debug',
+  debugLogs: 'onenet_debug_logs',
+  autoRefresh: 'onenet_auto_refresh_config',
 }
 
 const DEFAULT_CONFIG = {
@@ -11,22 +13,42 @@ const DEFAULT_CONFIG = {
   authorization: '',
 }
 
+const DEFAULT_AUTO_REFRESH = {
+  enabled: true,
+  intervalSec: 5,
+}
+
 const ENDPOINTS = {
   productDetail: '/product/detail',
   deviceList: '/device/list',
+  deviceProperty: '/thingmodel/query-device-property',
+  propertyHistory: '/thingmodel/query-device-property-history',
 }
 
 function getConfig() {
-  const saved = wx.getStorageSync(STORAGE_KEYS.config) || {}
   return {
     ...DEFAULT_CONFIG,
-    ...saved,
+    ...(wx.getStorageSync(STORAGE_KEYS.config) || {}),
   }
 }
 
 function saveConfig(config) {
   wx.setStorageSync(STORAGE_KEYS.config, {
     ...getConfig(),
+    ...config,
+  })
+}
+
+function getAutoRefreshConfig() {
+  return {
+    ...DEFAULT_AUTO_REFRESH,
+    ...(wx.getStorageSync(STORAGE_KEYS.autoRefresh) || {}),
+  }
+}
+
+function saveAutoRefreshConfig(config) {
+  wx.setStorageSync(STORAGE_KEYS.autoRefresh, {
+    ...getAutoRefreshConfig(),
     ...config,
   })
 }
@@ -51,13 +73,27 @@ function getLastDebugInfo() {
   return wx.getStorageSync(STORAGE_KEYS.debug) || null
 }
 
-function saveLastDebugInfo(info) {
-  wx.setStorageSync(STORAGE_KEYS.debug, info)
+function getDebugLogs() {
+  return wx.getStorageSync(STORAGE_KEYS.debugLogs) || []
 }
 
-function requestApi({ method = 'GET', path, data = {} }) {
-  const config = getConfig()
+function clearDebugLogs() {
+  wx.setStorageSync(STORAGE_KEYS.debugLogs, [])
+}
 
+function appendDebugLog(info) {
+  const logs = getDebugLogs()
+  logs.unshift(info)
+  wx.setStorageSync(STORAGE_KEYS.debugLogs, logs.slice(0, 50))
+}
+
+function saveLastDebugInfo(info) {
+  wx.setStorageSync(STORAGE_KEYS.debug, info)
+  appendDebugLog(info)
+}
+
+function requestApi({ method = 'GET', path, data = {}, debugTag = '' }) {
+  const config = getConfig()
   if (!config.authorization) {
     return Promise.reject(new Error('请先填写 authorization'))
   }
@@ -69,6 +105,7 @@ function requestApi({ method = 'GET', path, data = {} }) {
   }
 
   const reqMeta = {
+    debugTag,
     url,
     method,
     requestData: data,
@@ -104,11 +141,7 @@ function requestApi({ method = 'GET', path, data = {} }) {
           return
         }
 
-        resolve({
-          raw: body,
-          data: body.data,
-          debugInfo,
-        })
+        resolve({ raw: body, data: body.data, debugInfo })
       },
       fail: (err) => {
         const debugInfo = {
@@ -125,22 +158,73 @@ function requestApi({ method = 'GET', path, data = {} }) {
   })
 }
 
-// 1) 产品详情接口：用于初始化与校验 product_id + authorization
 function getProductDetail(productId) {
   return requestApi({
     method: 'GET',
     path: ENDPOINTS.productDetail,
     data: { product_id: productId },
+    debugTag: 'product-detail',
   })
 }
 
-// 2) 获取设备列表接口：初始化成功后获取设备 id/name
 function getDeviceList(productId) {
   return requestApi({
     method: 'GET',
     path: ENDPOINTS.deviceList,
     data: { product_id: productId },
+    debugTag: 'device-list',
   })
+}
+
+function getDeviceLatestProperties(productId, deviceName) {
+  return requestApi({
+    method: 'GET',
+    path: ENDPOINTS.deviceProperty,
+    data: { product_id: productId, device_name: deviceName },
+    debugTag: 'device-property',
+  })
+}
+
+function getPropertyHistory({ productId, deviceName, identifier, startTime, endTime, sort = '2', offset = '0', limit = '30' }) {
+  return requestApi({
+    method: 'GET',
+    path: ENDPOINTS.propertyHistory,
+    data: {
+      product_id: productId,
+      device_name: deviceName,
+      identifier,
+      start_time: String(startTime),
+      end_time: String(endTime),
+      sort,
+      offset,
+      limit,
+    },
+    debugTag: 'property-history',
+  })
+}
+
+async function bootstrapAuto() {
+  const config = getConfig()
+  if (!config.productId || !config.authorization) {
+    throw new Error('缺少产品ID或authorization，请前往设备中心配置')
+  }
+
+  const productRes = await getProductDetail(config.productId)
+  saveProductInfo(productRes.data)
+
+  const deviceRes = await getDeviceList(config.productId)
+  const list = deviceRes.data?.list || []
+  const devices = Array.isArray(list)
+    ? list.map((item) => ({
+        id: String(item.did || item.name || ''),
+        name: item.name || String(item.did || ''),
+        status: item.status === 0 ? '在线' : item.status === 2 ? '离线' : '未知',
+        latest: item.last_time || '-',
+      }))
+    : []
+
+  saveLocalDevices(devices)
+  return { product: productRes.data, devices }
 }
 
 module.exports = {
@@ -149,11 +233,18 @@ module.exports = {
   ENDPOINTS,
   getConfig,
   saveConfig,
+  getAutoRefreshConfig,
+  saveAutoRefreshConfig,
   getLocalDevices,
   saveLocalDevices,
   getProductInfo,
   saveProductInfo,
   getLastDebugInfo,
+  getDebugLogs,
+  clearDebugLogs,
   getProductDetail,
   getDeviceList,
+  getDeviceLatestProperties,
+  getPropertyHistory,
+  bootstrapAuto,
 }

@@ -1,104 +1,123 @@
 const oneNet = require('../../utils/onenet')
 
 const fallbackDevices = [
-  {
-    id: 'ESP32S3-WQ-001',
-    name: '1号水箱',
-    location: '实验室 A-203',
-    status: '在线',
-    signal: '良好',
-    battery: 86,
-  },
-  {
-    id: 'ESP32S3-WQ-002',
-    name: '2号水箱',
-    location: '实验室 A-205',
-    status: '在线',
-    signal: '中等',
-    battery: 74,
-  },
-  {
-    id: 'ESP32S3-WQ-003',
-    name: '户外采样点',
-    location: '南门景观池',
-    status: '离线',
-    signal: '弱',
-    battery: 41,
-  },
+  { id: '2559944541', name: '01', location: '默认设备', status: '未知', signal: '-', battery: '-' },
 ]
+
+function mapPropertiesToMetrics(properties = []) {
+  const dict = {}
+  properties.forEach((item) => {
+    dict[item.identifier] = item
+  })
+
+  return [
+    {
+      key: 'turd',
+      title: '浊度',
+      value: dict.turd?.value || '--',
+      unit: 'NTU',
+      level: '实时',
+      desc: dict.turd?.name || '获取浊度',
+      trend: dict.turd ? `更新时间 ${new Date(dict.turd.time).toLocaleTimeString()}` : '暂无数据',
+    },
+    {
+      key: 'tds',
+      title: 'TDS',
+      value: dict.tds?.value || '--',
+      unit: 'ppm',
+      level: '实时',
+      desc: dict.tds?.name || '获取电离度',
+      trend: dict.tds ? `更新时间 ${new Date(dict.tds.time).toLocaleTimeString()}` : '暂无数据',
+    },
+    {
+      key: 'temp',
+      title: '水温',
+      value: dict.temp?.value || '--',
+      unit: '℃',
+      level: '实时',
+      desc: dict.temp?.name || '获取温度',
+      trend: dict.temp ? `更新时间 ${new Date(dict.temp.time).toLocaleTimeString()}` : '暂无数据',
+    },
+    {
+      key: 'ph',
+      title: 'pH',
+      value: dict.ph?.value || '--',
+      unit: '',
+      level: '实时',
+      desc: dict.ph?.name || '获取酸碱度',
+      trend: dict.ph ? `更新时间 ${new Date(dict.ph.time).toLocaleTimeString()}` : '暂无数据',
+    },
+  ]
+}
 
 Page({
   data: {
     projectName: '基于 ESP32-S3 的水质监测系统',
-    subtitle: '毕业设计 · 小程序监控端（前端演示版）',
-    updateTime: '2026-03-16 12:00',
-    connectionHint: '当前为静态演示数据，后续将通过 OneNET 接入实时设备数据。',
+    subtitle: '毕业设计 · 小程序监控端',
+    updateTime: '-',
+    connectionHint: '启动后自动验证并同步设备，失败会自动跳转设备中心。',
     devices: fallbackDevices,
     currentDeviceIndex: 0,
     device: fallbackDevices[0],
-    metrics: [
-      {
-        key: 'turbidity',
-        title: '浊度',
-        value: '12',
-        unit: 'NTU',
-        level: '优',
-        desc: '水体清澈，悬浮物较少',
-        trend: '↘ 较上次下降 2 NTU',
-      },
-      {
-        key: 'tds',
-        title: 'TDS',
-        value: '238',
-        unit: 'ppm',
-        level: '正常',
-        desc: '总溶解固体处于可接受范围',
-        trend: '→ 与上次持平',
-      },
-      {
-        key: 'temp',
-        title: '水温',
-        value: '24.6',
-        unit: '℃',
-        level: '适宜',
-        desc: '温度适合常规养殖与检测环境',
-        trend: '↗ 较上次上升 0.4℃',
-      },
-      {
-        key: 'ph',
-        title: 'pH',
-        value: '7.2',
-        unit: '',
-        level: '中性',
-        desc: '酸碱度接近中性',
-        trend: '→ 波动很小',
-      },
-    ],
+    metrics: mapPropertiesToMetrics([]),
+    bootstrapped: false,
     quickActions: [
-      { key: 'warning', title: '预警中心', tip: '阈值报警、短信/订阅消息开关' },
-      { key: 'devices', title: '设备管理', tip: '多设备接入、在线状态与分组' },
-      { key: 'history', title: '历史记录', tip: '后续对接云端时间序列回放' },
+      { key: 'deviceData', title: '设备总数据', tip: '进入当前设备实时总数据页' },
+      { key: 'warning', title: '预警中心', tip: '阈值报警、消息开关' },
+      { key: 'devices', title: '设备中心', tip: '配置鉴权并查看所有调试记录' },
+      { key: 'refreshConfig', title: '刷新配置', tip: '设置自动刷新间隔等参数' },
     ],
+  },
+
+  async ensureAutoBootstrap() {
+    if (this.data.bootstrapped) return
+    try {
+      const result = await oneNet.bootstrapAuto()
+      const devices = result.devices.length ? result.devices : fallbackDevices
+      this.setData({
+        devices,
+        currentDeviceIndex: 0,
+        device: devices[0],
+        bootstrapped: true,
+      })
+      await this.refreshCurrentDeviceOnce()
+    } catch (err) {
+      wx.showToast({ title: err.message || '自动验证失败，跳转设备中心', icon: 'none' })
+      setTimeout(() => {
+        wx.navigateTo({ url: '/pages/devices/devices' })
+      }, 400)
+    }
+  },
+
+  async refreshCurrentDeviceOnce() {
+    const cfg = oneNet.getConfig()
+    const device = this.data.device
+    if (!device || !device.name) return
+
+    try {
+      const res = await oneNet.getDeviceLatestProperties(cfg.productId, device.name)
+      this.setData({
+        metrics: mapPropertiesToMetrics(Array.isArray(res.data) ? res.data : []),
+        updateTime: new Date().toLocaleString(),
+      })
+    } catch (err) {
+      // 首页不阻塞，只提示一次
+      this.setData({ updateTime: `${new Date().toLocaleString()}（刷新失败）` })
+    }
   },
 
   selectDevice(e) {
     const index = Number(e.currentTarget.dataset.index)
     const device = this.data.devices[index]
-    this.setData({
-      currentDeviceIndex: index,
-      device,
-    })
+    this.setData({ currentDeviceIndex: index, device })
+    this.refreshCurrentDeviceOnce()
   },
 
   goMetricDetail(e) {
     const { key, title, unit, value } = e.currentTarget.dataset
     wx.navigateTo({
-      url: `/pages/metric/metric?key=${key}&title=${title}&unit=${unit || ''}&value=${value}&deviceId=${this.data.device.id}`,
+      url: `/pages/metric/metric?key=${key}&title=${title}&unit=${unit || ''}&value=${value}&deviceName=${this.data.device.name}`,
     })
-
-    setTimeout(() => {
-      wx.stopPullDownRefresh()
-    }, 400)
   },
 
   goQuickAction(e) {
@@ -111,39 +130,21 @@ Page({
       wx.navigateTo({ url: '/pages/devices/devices' })
       return
     }
-
-    wx.showToast({
-      title: '该功能将随 OneNET 联调后开放',
-      icon: 'none',
-    })
-
-    setTimeout(() => {
-      wx.stopPullDownRefresh()
-    }, 400)
-  },
-
-  onShow() {
-    const localDevices = oneNet.getLocalDevices()
-    if (localDevices.length) {
-      const currentId = this.data.device && this.data.device.id
-      const idx = localDevices.findIndex((d) => d.id === currentId)
-      const nextIndex = idx >= 0 ? idx : 0
-      this.setData({
-        devices: localDevices,
-        currentDeviceIndex: nextIndex,
-        device: localDevices[nextIndex],
-      })
+    if (key === 'deviceData') {
+      wx.navigateTo({ url: `/pages/device-data/device-data?deviceName=${this.data.device.name}` })
+      return
+    }
+    if (key === 'refreshConfig') {
+      wx.navigateTo({ url: '/pages/refresh-config/refresh-config' })
+      return
     }
   },
 
-  onPullDownRefresh() {
-    wx.showToast({
-      title: '演示模式：暂无实时刷新',
-      icon: 'none',
-    })
+  onShow() {
+    this.ensureAutoBootstrap()
+  },
 
-    setTimeout(() => {
-      wx.stopPullDownRefresh()
-    }, 400)
+  onPullDownRefresh() {
+    this.refreshCurrentDeviceOnce().finally(() => wx.stopPullDownRefresh())
   },
 })

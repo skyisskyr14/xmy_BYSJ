@@ -1,32 +1,21 @@
-const seriesMap = {
-  turbidity: {
-    minute: [18, 17, 15, 14, 13, 12],
-    hour: [28, 24, 20, 16, 14, 12],
-    day: [36, 30, 25, 20, 16, 12],
-  },
-  tds: {
-    minute: [236, 239, 238, 237, 238, 238],
-    hour: [248, 244, 241, 240, 238, 238],
-    day: [260, 255, 251, 246, 241, 238],
-  },
-  temp: {
-    minute: [24.0, 24.1, 24.2, 24.4, 24.5, 24.6],
-    hour: [23.5, 23.8, 24.0, 24.2, 24.4, 24.6],
-    day: [22.8, 23.1, 23.5, 23.9, 24.3, 24.6],
-  },
-  ph: {
-    minute: [7.1, 7.1, 7.2, 7.2, 7.2, 7.2],
-    hour: [7.0, 7.1, 7.1, 7.2, 7.2, 7.2],
-    day: [6.9, 7.0, 7.0, 7.1, 7.1, 7.2],
-  },
+const oneNet = require('../../utils/onenet')
+
+const keyAlias = {
+  turbidity: 'turd',
+  turd: 'turd',
+  tds: 'tds',
+  temp: 'temp',
+  ph: 'ph',
 }
 
 Page({
   data: {
     key: '',
+    identifier: '',
     title: '',
     unit: '',
     current: '',
+    deviceName: '01',
     range: 'minute',
     rangeTabs: [
       { key: 'minute', text: '分钟' },
@@ -37,52 +26,90 @@ Page({
     statMin: '-',
     statMax: '-',
     statAvg: '-',
-    deviceId: 'ESP32S3-WQ-001',
+    historyRows: [],
+    loading: false,
   },
 
   onLoad(options) {
-    const { key = 'turbidity', title = '指标', unit = '', value = '', deviceId = 'ESP32S3-WQ-001' } = options
-    this.setData({
-      key,
-      title,
-      unit,
-      current: value,
-      deviceId,
-    })
-    wx.setNavigationBarTitle({ title: `${title}趋势` })
-    this.updateChart('minute')
+    const { key = 'turd', title = '指标', unit = '', value = '', deviceName = '01' } = options
+    const identifier = keyAlias[key] || key
+
+    this.setData({ key, identifier, title, unit, current: value, deviceName })
+    wx.setNavigationBarTitle({ title: `${title}历史` })
+    this.fetchHistory('minute')
   },
 
   switchRange(e) {
-    const range = e.currentTarget.dataset.range
-    this.updateChart(range)
+    this.fetchHistory(e.currentTarget.dataset.range)
   },
 
-  updateChart(range) {
-    const key = this.data.key
-    const source = seriesMap[key] || seriesMap.turbidity
-    const values = source[range] || source.minute
+  getTimeRange(range) {
+    const end = Date.now()
+    if (range === 'minute') return { start: end - 60 * 60 * 1000, end }
+    if (range === 'hour') return { start: end - 24 * 60 * 60 * 1000, end }
+    return { start: end - 7 * 24 * 60 * 60 * 1000, end }
+  },
 
-    const max = Math.max(...values)
-    const min = Math.min(...values)
-    const avg = values.reduce((sum, val) => sum + val, 0) / values.length
+  async fetchHistory(range) {
+    this.setData({ loading: true, range })
+    const cfg = oneNet.getConfig()
+    const { start, end } = this.getTimeRange(range)
 
-    const chartBars = values.map((val, idx) => ({
-      label: `${idx + 1}`,
-      value: val,
-      height: `${Math.max(12, Math.round((val / max) * 120))}rpx`,
-    }))
+    try {
+      const res = await oneNet.getPropertyHistory({
+        productId: cfg.productId,
+        deviceName: this.data.deviceName,
+        identifier: this.data.identifier,
+        startTime: start,
+        endTime: end,
+        limit: '30',
+        sort: '2',
+      })
 
-    this.setData({
-      range,
-      chartBars,
-      statMin: min.toFixed(2),
-      statMax: max.toFixed(2),
-      statAvg: avg.toFixed(2),
-    })
+      const list = res.data?.list || []
+      const values = list
+        .map((x) => Number(x.value))
+        .filter((x) => !Number.isNaN(x))
+        .reverse()
+
+      if (!values.length) {
+        this.setData({ chartBars: [], historyRows: [], statMin: '-', statMax: '-', statAvg: '-' })
+        return
+      }
+
+      const max = Math.max(...values)
+      const min = Math.min(...values)
+      const avg = values.reduce((s, v) => s + v, 0) / values.length
+
+      const chartBars = values.map((val, idx) => ({
+        label: `${idx + 1}`,
+        value: val,
+        height: `${Math.max(12, Math.round((val / (max || 1)) * 120))}rpx`,
+      }))
+
+      const historyRows = list.map((x) => ({
+        time: x.time || x.ts || '-',
+        value: x.value,
+      }))
+
+      this.setData({
+        chartBars,
+        historyRows,
+        statMin: min.toFixed(2),
+        statMax: max.toFixed(2),
+        statAvg: avg.toFixed(2),
+      })
+    } catch (err) {
+      wx.showToast({ title: err.message || '历史查询失败', icon: 'none' })
+    } finally {
+      this.setData({ loading: false })
+    }
   },
 
   goWarning() {
-    wx.navigateTo({ url: `/pages/warning/warning?deviceId=${this.data.deviceId}` })
+    const devices = oneNet.getLocalDevices()
+    const matched = devices.find((d) => d.name === this.data.deviceName)
+    const deviceId = matched ? matched.id : this.data.deviceName
+    wx.navigateTo({ url: `/pages/warning/warning?deviceId=${deviceId}` })
   },
 })

@@ -1,24 +1,23 @@
 <scroll-view class="page" scroll-y>
   <view class="card">
-    <view class="title">OneNET 初始化配置</view>
+    <view class="title">设备中心配置（失败时跳转到这里）</view>
     <view class="field">
-      <text class="label">产品ID（用户填写，默认 gqp5I5JYU8）</text>
+      <text class="label">产品ID</text>
       <input value="{{productId}}" bindinput="onInputProductId" placeholder="例如 gqp5I5JYU8" />
     </view>
     <view class="field">
-      <text class="label">authorization（用户填写）</text>
+      <text class="label">authorization</text>
       <input value="{{authorization}}" bindinput="onInputAuthorization" placeholder="version=2018-10-31&res=..." />
     </view>
 
     <view class="actions">
       <button size="mini" class="bind-btn" bindtap="saveConfig">保存配置</button>
-      <button size="mini" class="bind-btn" loading="{{loading}}" bindtap="initProduct">1. 初始化产品详情</button>
-      <button size="mini" class="warning-btn" loading="{{loading}}" bindtap="fetchDeviceList">2. 获取设备列表</button>
+      <button size="mini" class="bind-btn" loading="{{loading}}" bindtap="retryAutoBootstrap">重新自动验证并同步设备</button>
     </view>
   </view>
 
   <view class="card" wx:if="{{productInfo}}">
-    <view class="title">产品详情（初始化结果）</view>
+    <view class="title">产品详情</view>
     <view class="meta">产品ID：{{productInfo.product_id}}</view>
     <view class="meta">产品名：{{productInfo.name}}</view>
     <view class="meta">设备总数：{{productInfo.own_device_count}}</view>
@@ -27,21 +26,30 @@
   </view>
 
   <view class="card">
-    <view class="title">设备列表（记录 id + name）</view>
+    <view class="title">设备列表（自动同步）</view>
     <block wx:for="{{devices}}" wx:key="id">
       <view class="device-item">
         <view class="name">{{item.name}}</view>
         <view class="id">ID: {{item.id}}</view>
         <view class="meta">状态：{{item.status}}</view>
         <view class="meta">最近活跃：{{item.latest}}</view>
-        <button size="mini" class="warning-btn" data-id="{{item.id}}" bindtap="goDeviceWarning">该设备预警设置</button>
+        <view class="actions">
+          <button size="mini" class="warning-btn" data-id="{{item.id}}" bindtap="goDeviceWarning">预警设置</button>
+          <button size="mini" class="bind-btn" data-name="{{item.name}}" bindtap="goDeviceData">总数据</button>
+        </view>
       </view>
     </block>
-    <view wx:if="{{devices.length === 0}}" class="meta">暂无设备，请先获取设备列表。</view>
+    <view wx:if="{{devices.length === 0}}" class="meta">暂无设备，先执行自动同步。</view>
   </view>
 
   <view class="card">
-    <view class="title">最近一次接口调试信息</view>
+    <view class="title">最近一次请求调试</view>
     <text class="debug-text">{{debugText}}</text>
+  </view>
+
+  <view class="card">
+    <view class="title">所有请求调试记录</view>
+    <button size="mini" class="warning-btn" bindtap="clearDebug">清空调试记录</button>
+    <text class="debug-text">{{debugLogsText}}</text>
   </view>
 </scroll-view>

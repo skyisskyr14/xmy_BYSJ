@@ -1,0 +1,9 @@
+page{background:#f2f5f9}
+.page{padding:24rpx}
+.card{background:#fff;border-radius:20rpx;padding:24rpx}
+.title{font-size:30rpx;font-weight:600;color:#1b2a41}
+.row{display:flex;justify-content:space-between;align-items:center;margin-top:16rpx}
+.field{margin-top:14rpx}
+.label{display:block;font-size:22rpx;color:#60708a;margin-bottom:6rpx}
+input{background:#f7faff;border-radius:12rpx;padding:12rpx}
+.btn{margin-top:16rpx;background:#1f6feb;color:#fff;border-radius:12rpx}

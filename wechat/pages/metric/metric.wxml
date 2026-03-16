@@ -1,25 +1,21 @@
 <view class="page">
   <view class="card overview">
-    <view class="title">{{title}}</view>
+    <view class="title">{{title}}（{{identifier}}）</view>
     <view class="value-row">
       <text class="value">{{current}}</text>
       <text class="unit">{{unit}}</text>
     </view>
-    <view class="sub">近期波动（演示数据）</view>
+    <view class="sub">设备：{{deviceName}}</view>
   </view>
 
   <view class="tabs">
     <block wx:for="{{rangeTabs}}" wx:key="key">
-      <view
-        class="tab {{item.key === range ? 'active' : ''}}"
-        data-range="{{item.key}}"
-        bindtap="switchRange"
-      >{{item.text}}</view>
+      <view class="tab {{item.key === range ? 'active' : ''}}" data-range="{{item.key}}" bindtap="switchRange">{{item.text}}</view>
     </block>
   </view>
 
   <view class="card chart-card">
-    <view class="chart-title">趋势图</view>
+    <view class="chart-title">属性历史趋势</view>
     <view class="chart-wrap">
       <block wx:for="{{chartBars}}" wx:key="label">
         <view class="bar-item">
@@ -37,5 +33,12 @@
     <view class="stat-item"><text>平均值</text><text>{{statAvg}} {{unit}}</text></view>
   </view>
 
-  <button class="warn-btn" bindtap="goWarning">去预警中心设置阈值与开关</button>
+  <view class="card stat-card">
+    <view class="chart-title">历史记录</view>
+    <block wx:for="{{historyRows}}" wx:key="time">
+      <view class="stat-item"><text>{{item.time}}</text><text>{{item.value}} {{unit}}</text></view>
+    </block>
+  </view>
+
+  <button class="warn-btn" bindtap="goWarning">去预警中心</button>
 </view>

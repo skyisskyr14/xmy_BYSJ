@@ -1,6 +1,8 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/refresh-config/refresh-config",
+    "pages/device-data/device-data",
     "pages/metric/metric",
     "pages/warning/warning",
     "pages/devices/devices",

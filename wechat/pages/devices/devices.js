@@ -1,21 +1,11 @@
 const oneNet = require('../../utils/onenet')
 
-function normalizeDevice(item) {
-  return {
-    id: String(item.did || item.name || ''),
-    name: item.name || String(item.did || ''),
-    status: item.status === 0 ? '在线' : item.status === 2 ? '离线' : '未知',
-    latest: item.last_time || '-',
-  }
-}
-
-function stringifyDebug(errOrRes) {
-  const info = errOrRes?.debugInfo || errOrRes || oneNet.getLastDebugInfo()
-  if (!info) return '暂无调试信息'
+function stringifyDebug(data) {
+  if (!data) return '暂无调试信息'
   try {
-    return JSON.stringify(info, null, 2)
+    return JSON.stringify(data, null, 2)
   } catch (e) {
-    return String(info)
+    return String(data)
   }
 }
 
@@ -23,13 +13,12 @@ Page({
   data: {
     productId: 'gqp5I5JYU8',
     authorization: '',
-
     loading: false,
     initialized: false,
-
     productInfo: null,
     devices: [],
     debugText: '',
+    debugLogsText: '',
   },
 
   onLoad() {
@@ -39,6 +28,7 @@ Page({
 
   onShow() {
     this.loadLocalData()
+    this.refreshDebugLogs()
   },
 
   loadConfig() {
@@ -46,7 +36,7 @@ Page({
     this.setData({
       productId: config.productId,
       authorization: config.authorization,
-      debugText: stringifyDebug(),
+      debugText: stringifyDebug(oneNet.getLastDebugInfo()),
     })
   },
 
@@ -58,6 +48,11 @@ Page({
       devices,
       initialized: !!productInfo,
     })
+  },
+
+  refreshDebugLogs() {
+    const logs = oneNet.getDebugLogs()
+    this.setData({ debugLogsText: stringifyDebug(logs) })
   },
 
   onInputProductId(e) {
@@ -76,11 +71,7 @@ Page({
     wx.showToast({ title: '配置已保存', icon: 'success' })
   },
 
-  showDebug(errOrRes) {
-    this.setData({ debugText: stringifyDebug(errOrRes) })
-  },
-
-  async initProduct() {
+  async retryAutoBootstrap() {
     if (!this.data.productId || !this.data.authorization) {
       wx.showToast({ title: '请填写产品ID和authorization', icon: 'none' })
       return
@@ -90,47 +81,37 @@ Page({
     this.setData({ loading: true })
 
     try {
-      const res = await oneNet.getProductDetail(this.data.productId)
-      this.showDebug(res)
-      oneNet.saveProductInfo(res.data)
+      const res = await oneNet.bootstrapAuto()
       this.setData({
-        productInfo: res.data,
+        productInfo: res.product,
+        devices: res.devices,
         initialized: true,
+        debugText: stringifyDebug(oneNet.getLastDebugInfo()),
       })
-      wx.showToast({ title: '产品初始化成功', icon: 'success' })
+      this.refreshDebugLogs()
+      wx.showToast({ title: '自动验证并同步成功', icon: 'success' })
     } catch (err) {
-      this.showDebug(err)
-      wx.showToast({ title: err.message || '产品初始化失败', icon: 'none' })
+      this.setData({ debugText: stringifyDebug(err.debugInfo || err) })
+      this.refreshDebugLogs()
+      wx.showToast({ title: err.message || '自动同步失败', icon: 'none' })
     } finally {
       this.setData({ loading: false })
     }
   },
 
-  async fetchDeviceList() {
-    if (!this.data.initialized) {
-      wx.showToast({ title: '请先完成产品初始化', icon: 'none' })
-      return
-    }
-
-    this.setData({ loading: true })
-    try {
-      const res = await oneNet.getDeviceList(this.data.productId)
-      this.showDebug(res)
-      const list = res.data?.list || []
-      const devices = Array.isArray(list) ? list.map(normalizeDevice) : []
-      oneNet.saveLocalDevices(devices)
-      this.setData({ devices })
-      wx.showToast({ title: '设备列表获取成功', icon: 'success' })
-    } catch (err) {
-      this.showDebug(err)
-      wx.showToast({ title: err.message || '获取设备列表失败', icon: 'none' })
-    } finally {
-      this.setData({ loading: false })
-    }
+  clearDebug() {
+    oneNet.clearDebugLogs()
+    this.refreshDebugLogs()
+    wx.showToast({ title: '已清空调试记录', icon: 'success' })
   },
 
   goDeviceWarning(e) {
     const { id } = e.currentTarget.dataset
     wx.navigateTo({ url: `/pages/warning/warning?deviceId=${id}` })
+  },
+
+  goDeviceData(e) {
+    const { name } = e.currentTarget.dataset
+    wx.navigateTo({ url: `/pages/device-data/device-data?deviceName=${name}` })
   },
 })
