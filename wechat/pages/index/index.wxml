@@ -6,8 +6,24 @@
     <view class="hero-hint">{{connectionHint}}</view>
   </view>
 
+  <view class="section-title split-title">多设备接入</view>
+  <scroll-view class="device-scroll" scroll-x>
+    <view class="device-chip-wrap">
+      <block wx:for="{{devices}}" wx:key="id">
+        <view
+          class="device-chip {{index === currentDeviceIndex ? 'active' : ''}}"
+          data-index="{{index}}"
+          bindtap="selectDevice"
+        >
+          <text class="chip-name">{{item.name}}</text>
+          <text class="chip-id">{{item.id}}</text>
+        </view>
+      </block>
+    </view>
+  </scroll-view>
+
   <view class="card section">
-    <view class="section-title">设备信息</view>
+    <view class="section-title">当前设备信息</view>
     <view class="device-grid">
       <view class="item">
         <text class="label">设备编号</text>
@@ -19,7 +35,7 @@
       </view>
       <view class="item">
         <text class="label">在线状态</text>
-        <text class="value status online">{{device.status}}</text>
+        <text class="value status {{device.status === '在线' ? 'online' : 'offline'}}">{{device.status}}</text>
       </view>
       <view class="item">
         <text class="label">信号质量</text>
@@ -32,10 +48,17 @@
     </view>
   </view>
 
-  <view class="section-title split-title">水质核心指标</view>
+  <view class="section-title split-title">水质核心指标（点击查看图表）</view>
   <view class="metrics-wrap">
     <block wx:for="{{metrics}}" wx:key="key">
-      <view class="card metric-card">
+      <view
+        class="card metric-card"
+        bindtap="goMetricDetail"
+        data-key="{{item.key}}"
+        data-title="{{item.title}}"
+        data-unit="{{item.unit}}"
+        data-value="{{item.value}}"
+      >
         <view class="metric-head">
           <text class="metric-name">{{item.title}}</text>
           <text class="metric-level">{{item.level}}</text>
@@ -51,10 +74,10 @@
   </view>
 
   <view class="card section">
-    <view class="section-title">后续功能规划</view>
+    <view class="section-title">功能入口</view>
     <view class="quick-list">
-      <block wx:for="{{quickActions}}" wx:key="title">
-        <view class="quick-item">
+      <block wx:for="{{quickActions}}" wx:key="key">
+        <view class="quick-item" data-key="{{item.key}}" bindtap="goQuickAction">
           <view class="quick-title">{{item.title}}</view>
           <view class="quick-tip">{{item.tip}}</view>
         </view>

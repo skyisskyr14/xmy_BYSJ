@@ -1,0 +1,29 @@
+<scroll-view class="page" scroll-y>
+  <view class="card">
+    <view class="title">多设备接入管理</view>
+    <view class="subtitle">支持按分组查看设备接入状态，后续可映射到 OneNET 产品与设备实例。</view>
+    <view class="group-row">
+      <block wx:for="{{groupFilter}}" wx:key="*this">
+        <view class="group-chip {{item === currentGroup ? 'active' : ''}}" data-group="{{item}}" bindtap="changeGroup">{{item}}</view>
+      </block>
+    </view>
+  </view>
+
+  <block wx:for="{{shownDevices}}" wx:key="id">
+    <view class="card device-card">
+      <view class="head-row">
+        <view>
+          <view class="name">{{item.name}}</view>
+          <view class="id">{{item.id}}</view>
+        </view>
+        <view class="status {{item.status === '在线' ? 'online' : 'offline'}}">{{item.status}}</view>
+      </view>
+
+      <view class="meta">分组：{{item.group}}</view>
+      <view class="meta">最近上报：{{item.latest}}</view>
+      <view class="meta">接入通道：{{item.gateway}}</view>
+
+      <button size="mini" class="bind-btn" data-id="{{item.id}}" bindtap="bindDevice">设为当前监控设备</button>
+    </view>
+  </block>
+</scroll-view>

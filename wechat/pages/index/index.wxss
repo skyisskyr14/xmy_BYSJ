@@ -24,20 +24,14 @@ page {
 .hero-title {
   font-size: 36rpx;
   font-weight: 700;
-  line-height: 1.5;
 }
 
-.hero-subtitle {
-  font-size: 24rpx;
-  margin-top: 8rpx;
-  opacity: 0.95;
-}
-
+.hero-subtitle,
 .hero-time,
 .hero-hint {
-  font-size: 22rpx;
+  font-size: 23rpx;
   margin-top: 10rpx;
-  opacity: 0.92;
+  opacity: 0.95;
 }
 
 .section {
@@ -53,6 +47,49 @@ page {
 
 .split-title {
   margin: 10rpx 2rpx 14rpx;
+}
+
+.device-scroll {
+  white-space: nowrap;
+  margin-bottom: 18rpx;
+}
+
+.device-chip-wrap {
+  display: inline-flex;
+  gap: 14rpx;
+  padding-bottom: 4rpx;
+}
+
+.device-chip {
+  min-width: 220rpx;
+  background: #fff;
+  border: 1px solid #d9e7ff;
+  border-radius: 16rpx;
+  padding: 14rpx 18rpx;
+}
+
+.device-chip.active {
+  background: #1f6feb;
+  border-color: #1f6feb;
+}
+
+.chip-name {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #173158;
+}
+
+.chip-id {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 20rpx;
+  color: #60708a;
+}
+
+.device-chip.active .chip-name,
+.device-chip.active .chip-id {
+  color: #fff;
 }
 
 .device-grid {
@@ -83,6 +120,10 @@ page {
 
 .status.online {
   color: #16a34a;
+}
+
+.status.offline {
+  color: #dc2626;
 }
 
 .metrics-wrap {

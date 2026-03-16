@@ -1,6 +1,9 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/metric/metric",
+    "pages/warning/warning",
+    "pages/devices/devices",
     "pages/logs/logs"
   ],
   "window": {

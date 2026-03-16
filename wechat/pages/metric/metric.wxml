@@ -1,0 +1,41 @@
+<view class="page">
+  <view class="card overview">
+    <view class="title">{{title}}</view>
+    <view class="value-row">
+      <text class="value">{{current}}</text>
+      <text class="unit">{{unit}}</text>
+    </view>
+    <view class="sub">近期波动（演示数据）</view>
+  </view>
+
+  <view class="tabs">
+    <block wx:for="{{rangeTabs}}" wx:key="key">
+      <view
+        class="tab {{item.key === range ? 'active' : ''}}"
+        data-range="{{item.key}}"
+        bindtap="switchRange"
+      >{{item.text}}</view>
+    </block>
+  </view>
+
+  <view class="card chart-card">
+    <view class="chart-title">趋势图</view>
+    <view class="chart-wrap">
+      <block wx:for="{{chartBars}}" wx:key="label">
+        <view class="bar-item">
+          <view class="bar" style="height: {{item.height}};"></view>
+          <text class="bar-value">{{item.value}}</text>
+          <text class="bar-label">{{item.label}}</text>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <view class="card stat-card">
+    <view class="stat-item"><text>最小值</text><text>{{statMin}} {{unit}}</text></view>
+    <view class="stat-item"><text>最大值</text><text>{{statMax}} {{unit}}</text></view>
+    <view class="stat-item"><text>平均值</text><text>{{statAvg}} {{unit}}</text></view>
+  </view>
+
+  <button class="warn-btn" bindtap="goWarning">去预警中心设置阈值与开关</button>
+</view>
